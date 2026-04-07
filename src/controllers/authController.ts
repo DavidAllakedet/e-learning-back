@@ -5,8 +5,10 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
 
 const generateToken = (id: string, role: string) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'secret', {
-    expiresIn: process.env.JWT_EXPIRE || '30d',
+  const secret = process.env.JWT_SECRET || 'secret';
+  const expiresIn = (process.env.JWT_EXPIRE || '30d') as any;
+  return jwt.sign({ id, role }, secret, {
+    expiresIn: expiresIn,
   });
 };
 
