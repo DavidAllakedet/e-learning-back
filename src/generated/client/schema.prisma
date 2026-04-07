@@ -1,6 +1,7 @@
 // d:\PROJETS\COURS REACT\e-l\backend\prisma\schema.prisma
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {

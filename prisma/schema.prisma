@@ -1,6 +1,7 @@
 // d:\PROJETS\COURS REACT\e-l\backend\prisma\schema.prisma
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -34,6 +35,24 @@ model Course {
   enrollments Enrollment[]
   quizzes     Quiz[]
   assignments Assignment[]
+  modules     CourseModule[]
+}
+
+model CourseModule {
+  id       String    @id @default(uuid())
+  title    String
+  courseId String
+  course   Course    @relation(fields: [courseId], references: [id])
+  contents CourseContent[]
+}
+
+model CourseContent {
+  id       String @id @default(uuid())
+  title    String
+  type     String // 'VIDEO', 'PDF'
+  url      String
+  moduleId String
+  module   CourseModule @relation(fields: [moduleId], references: [id])
 }
 
 model Enrollment {
@@ -42,8 +61,20 @@ model Enrollment {
   user      User     @relation(fields: [userId], references: [id])
   courseId  String
   course    Course   @relation(fields: [courseId], references: [id])
+  progress  Progress[]
 
   @@unique([userId, courseId])
+}
+
+model Progress {
+  id              String        @id @default(uuid())
+  userId          String
+  courseContentId String
+  completed       Boolean       @default(false)
+  enrollmentId    String
+  enrollment      Enrollment    @relation(fields: [enrollmentId], references: [id])
+
+  @@unique([userId, courseContentId])
 }
 
 // Phase 3.6 : Quiz

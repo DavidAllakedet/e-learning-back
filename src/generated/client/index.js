@@ -23,7 +23,7 @@ const {
   defineDmmfProperty,
   Public,
   getRuntime
-} = require('@prisma/client/runtime/library.js')
+} = require('./runtime/library.js')
 
 
 const Prisma = {}
@@ -208,7 +208,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\node_modules\\@prisma\\client",
+      "value": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -222,7 +222,8 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\prisma\\schema.prisma"
+    "sourceFilePath": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\prisma\\schema.prisma",
+    "isCustomOutput": true
   },
   "relativeEnvPaths": {
     "rootEnvPath": null,
@@ -244,8 +245,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// d:\\PROJETS\\COURS REACT\\e-l\\backend\\prisma\\schema.prisma\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nmodel User {\n  id        String   @id @default(uuid())\n  email     String   @unique\n  password  String\n  firstName String\n  lastName  String\n  role      String   @default(\"STUDENT\")\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  taughtCourses Course[]     @relation(\"TeacherCourses\")\n  enrollments   Enrollment[]\n  submissions   Submission[]\n  grades        Grade[]\n}\n\nmodel Course {\n  id          String         @id @default(uuid())\n  title       String\n  description String\n  price       Float          @default(0)\n  teacherId   String\n  teacher     User           @relation(\"TeacherCourses\", fields: [teacherId], references: [id])\n  enrollments Enrollment[]\n  quizzes     Quiz[]\n  assignments Assignment[]\n  modules     CourseModule[]\n}\n\nmodel CourseModule {\n  id       String          @id @default(uuid())\n  title    String\n  courseId String\n  course   Course          @relation(fields: [courseId], references: [id])\n  contents CourseContent[]\n}\n\nmodel CourseContent {\n  id       String       @id @default(uuid())\n  title    String\n  type     String // 'VIDEO', 'PDF'\n  url      String\n  moduleId String\n  module   CourseModule @relation(fields: [moduleId], references: [id])\n}\n\nmodel Enrollment {\n  id       String     @id @default(uuid())\n  userId   String\n  user     User       @relation(fields: [userId], references: [id])\n  courseId String\n  course   Course     @relation(fields: [courseId], references: [id])\n  progress Progress[]\n\n  @@unique([userId, courseId])\n}\n\nmodel Progress {\n  id              String     @id @default(uuid())\n  userId          String\n  courseContentId String\n  completed       Boolean    @default(false)\n  enrollmentId    String\n  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])\n\n  @@unique([userId, courseContentId])\n}\n\n// Phase 3.6 : Quiz\nmodel Quiz {\n  id        String     @id @default(uuid())\n  title     String\n  courseId  String\n  course    Course     @relation(fields: [courseId], references: [id])\n  questions Question[]\n}\n\nmodel Question {\n  id      String @id @default(uuid())\n  text    String\n  options String // JSON stringified array of options\n  answer  String // The correct option\n  quizId  String\n  quiz    Quiz   @relation(fields: [quizId], references: [id])\n}\n\n// Phase 3.7 : Gestion des devoirs\nmodel Assignment {\n  id          String       @id @default(uuid())\n  title       String\n  description String\n  dueDate     DateTime\n  courseId    String\n  course      Course       @relation(fields: [courseId], references: [id])\n  submissions Submission[]\n}\n\nmodel Submission {\n  id           String     @id @default(uuid())\n  fileUrl      String\n  submittedAt  DateTime   @default(now())\n  userId       String\n  user         User       @relation(fields: [userId], references: [id])\n  assignmentId String\n  assignment   Assignment @relation(fields: [assignmentId], references: [id])\n  grade        Grade?\n}\n\nmodel Grade {\n  id           String     @id @default(uuid())\n  value        Float\n  feedback     String?\n  submissionId String     @unique\n  submission   Submission @relation(fields: [submissionId], references: [id])\n  teacherId    String\n  teacher      User       @relation(fields: [teacherId], references: [id])\n}\n",
-  "inlineSchemaHash": "2a331031f8da2990931f4b75135b95a37c49d71d3e166105f7800ba495b8ca2e",
+  "inlineSchema": "// d:\\PROJETS\\COURS REACT\\e-l\\backend\\prisma\\schema.prisma\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nmodel User {\n  id        String   @id @default(uuid())\n  email     String   @unique\n  password  String\n  firstName String\n  lastName  String\n  role      String   @default(\"STUDENT\")\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  taughtCourses Course[]     @relation(\"TeacherCourses\")\n  enrollments   Enrollment[]\n  submissions   Submission[]\n  grades        Grade[]\n}\n\nmodel Course {\n  id          String         @id @default(uuid())\n  title       String\n  description String\n  price       Float          @default(0)\n  teacherId   String\n  teacher     User           @relation(\"TeacherCourses\", fields: [teacherId], references: [id])\n  enrollments Enrollment[]\n  quizzes     Quiz[]\n  assignments Assignment[]\n  modules     CourseModule[]\n}\n\nmodel CourseModule {\n  id       String          @id @default(uuid())\n  title    String\n  courseId String\n  course   Course          @relation(fields: [courseId], references: [id])\n  contents CourseContent[]\n}\n\nmodel CourseContent {\n  id       String       @id @default(uuid())\n  title    String\n  type     String // 'VIDEO', 'PDF'\n  url      String\n  moduleId String\n  module   CourseModule @relation(fields: [moduleId], references: [id])\n}\n\nmodel Enrollment {\n  id       String     @id @default(uuid())\n  userId   String\n  user     User       @relation(fields: [userId], references: [id])\n  courseId String\n  course   Course     @relation(fields: [courseId], references: [id])\n  progress Progress[]\n\n  @@unique([userId, courseId])\n}\n\nmodel Progress {\n  id              String     @id @default(uuid())\n  userId          String\n  courseContentId String\n  completed       Boolean    @default(false)\n  enrollmentId    String\n  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])\n\n  @@unique([userId, courseContentId])\n}\n\n// Phase 3.6 : Quiz\nmodel Quiz {\n  id        String     @id @default(uuid())\n  title     String\n  courseId  String\n  course    Course     @relation(fields: [courseId], references: [id])\n  questions Question[]\n}\n\nmodel Question {\n  id      String @id @default(uuid())\n  text    String\n  options String // JSON stringified array of options\n  answer  String // The correct option\n  quizId  String\n  quiz    Quiz   @relation(fields: [quizId], references: [id])\n}\n\n// Phase 3.7 : Gestion des devoirs\nmodel Assignment {\n  id          String       @id @default(uuid())\n  title       String\n  description String\n  dueDate     DateTime\n  courseId    String\n  course      Course       @relation(fields: [courseId], references: [id])\n  submissions Submission[]\n}\n\nmodel Submission {\n  id           String     @id @default(uuid())\n  fileUrl      String\n  submittedAt  DateTime   @default(now())\n  userId       String\n  user         User       @relation(fields: [userId], references: [id])\n  assignmentId String\n  assignment   Assignment @relation(fields: [assignmentId], references: [id])\n  grade        Grade?\n}\n\nmodel Grade {\n  id           String     @id @default(uuid())\n  value        Float\n  feedback     String?\n  submissionId String     @unique\n  submission   Submission @relation(fields: [submissionId], references: [id])\n  teacherId    String\n  teacher      User       @relation(fields: [teacherId], references: [id])\n}\n",
+  "inlineSchemaHash": "cc9daa7fd6ed53c1b417b0af22022df560a39d6c50416aaeb4d65485638e423e",
   "copyEngine": true
 }
 
@@ -254,8 +255,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "node_modules/.prisma/client",
-    ".prisma/client",
+    "src/generated/client",
+    "generated/client",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -271,7 +272,7 @@ defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = undefined
 
 
-const { warnEnvConflicts } = require('@prisma/client/runtime/library.js')
+const { warnEnvConflicts } = require('./runtime/library.js')
 
 warnEnvConflicts({
     rootEnvPath: config.relativeEnvPaths.rootEnvPath && path.resolve(config.dirname, config.relativeEnvPaths.rootEnvPath),
@@ -284,7 +285,7 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "query_engine-windows.dll.node");
-path.join(process.cwd(), "node_modules/.prisma/client/query_engine-windows.dll.node")
+path.join(process.cwd(), "src/generated/client/query_engine-windows.dll.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "node_modules/.prisma/client/schema.prisma")
+path.join(process.cwd(), "src/generated/client/schema.prisma")

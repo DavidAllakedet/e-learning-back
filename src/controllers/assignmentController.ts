@@ -1,6 +1,7 @@
 // d:\PROJETS\COURS REACT\e-l\backend\src\controllers\assignmentController.ts
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import path from 'path';
 
 // Créer un devoir (Enseignant/Admin)
 export const createAssignment = async (req: Request, res: Response) => {
@@ -29,9 +30,12 @@ export const submitAssignment = async (req: Request, res: Response) => {
 
     if (!file) return res.status(400).json({ message: 'Aucun fichier fourni' });
 
+    const ext = path.extname(file.originalname).toLowerCase();
+    const subDir = ext === '.mp4' ? 'videos' : ext === '.pdf' ? 'pdfs' : 'others';
+
     const submission = await prisma.submission.create({
       data: {
-        fileUrl: `/uploads/${file.filename}`,
+        fileUrl: `/uploads/${subDir}/${file.filename}`,
         userId,
         assignmentId,
       },
