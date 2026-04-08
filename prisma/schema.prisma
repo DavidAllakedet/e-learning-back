@@ -48,6 +48,7 @@ model Course {
   title       String
   description String
   price       Float          @default(0)
+  status      String         @default("DRAFT")
   teacherId   String
   assignments Assignment[]
   teacher     User           @relation("TeacherCourses", fields: [teacherId], references: [id])

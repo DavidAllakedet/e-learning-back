@@ -57,7 +57,7 @@ export const createCourse = async (req: Request, res: Response) => {
   const teacherId = (req as any).user.id;
   try {
     const course = await prisma.course.create({
-      data: { title, description, price: parseFloat(price), teacherId }
+      data: { title, description, price: parseFloat(price), teacherId, status: 'DRAFT' }
     });
     res.status(201).json(course);
   } catch (error) {
@@ -68,7 +68,7 @@ export const createCourse = async (req: Request, res: Response) => {
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
-    const where: any = {};
+    const where: any = { status: 'PUBLISHED' };
     
     if (search) {
       where.OR = [
@@ -104,6 +104,148 @@ export const getTeacherCourses = async (req: Request, res: Response) => {
     res.json(courses);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération des cours enseignant' });
+  }
+};
+
+export const updateCourse = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+    const { title, description, price, status } = req.body;
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    const updated = await prisma.course.update({
+      where: { id },
+      data: {
+        title: typeof title === 'string' ? title : undefined,
+        description: typeof description === 'string' ? description : undefined,
+        price: price !== undefined ? parseFloat(price) : undefined,
+        status: typeof status === 'string' ? status : undefined,
+      }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour du cours' });
+  }
+};
+
+export const deleteCourse = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    await prisma.$transaction([
+      prisma.grade.deleteMany({ where: { submission: { assignment: { courseId: id } } } }),
+      prisma.submission.deleteMany({ where: { assignment: { courseId: id } } }),
+      prisma.assignment.deleteMany({ where: { courseId: id } }),
+      prisma.quizResult.deleteMany({ where: { quiz: { courseId: id } } }),
+      prisma.question.deleteMany({ where: { quiz: { courseId: id } } }),
+      prisma.quiz.deleteMany({ where: { courseId: id } }),
+      prisma.progress.deleteMany({ where: { enrollment: { courseId: id } } }),
+      prisma.enrollment.deleteMany({ where: { courseId: id } }),
+      prisma.courseContent.deleteMany({ where: { module: { courseId: id } } }),
+      prisma.courseModule.deleteMany({ where: { courseId: id } }),
+      prisma.course.delete({ where: { id } }),
+    ]);
+    res.json({ message: 'Cours supprimé' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression du cours' });
+  }
+};
+
+export const getCourseEnrollments = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { courseId: id },
+      include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } } },
+      orderBy: { id: 'desc' }
+    });
+    res.json(enrollments);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des inscriptions du cours' });
+  }
+};
+
+export const removeCourseEnrollment = async (req: Request, res: Response) => {
+  try {
+    const { id, enrollmentId } = req.params;
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
+    if (!enrollment || enrollment.courseId !== id) {
+      return res.status(404).json({ message: 'Inscription non trouvée' });
+    }
+
+    await prisma.enrollment.delete({ where: { id: enrollmentId } });
+    res.json({ message: 'Étudiant retiré du cours' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression de l\'inscription' });
+  }
+};
+
+export const addCourseEnrollment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userId: targetUserId } = req.body;
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    if (targetUser.role !== 'STUDENT') return res.status(400).json({ message: 'Seuls les étudiants peuvent être inscrits' });
+
+    const enrollment = await prisma.enrollment.create({
+      data: { userId: targetUserId, courseId: id },
+      include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } } }
+    });
+
+    await createNotification(
+      targetUserId,
+      'Inscription par enseignant',
+      `Vous avez été inscrit au cours "${course.title}".`,
+      'INFO'
+    );
+
+    res.status(201).json(enrollment);
+  } catch (error) {
+    res.status(400).json({ message: 'Déjà inscrit ou erreur lors de l\'inscription' });
   }
 };
 

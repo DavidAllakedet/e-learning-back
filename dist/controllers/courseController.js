@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCourseDetails = exports.addContent = exports.addModule = exports.deleteEnrollment = exports.getAllEnrollments = exports.enrollInCourse = exports.getTeacherCourses = exports.getAllCourses = exports.createCourse = exports.getEnrolledCourses = void 0;
+exports.getCourseDetails = exports.addContent = exports.addModule = exports.deleteEnrollment = exports.getAllEnrollments = exports.enrollInCourse = exports.addCourseEnrollment = exports.removeCourseEnrollment = exports.getCourseEnrollments = exports.deleteCourse = exports.updateCourse = exports.getTeacherCourses = exports.getAllCourses = exports.createCourse = exports.getEnrolledCourses = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const notificationController_1 = require("./notificationController");
 // Course Controller
@@ -56,7 +56,7 @@ const createCourse = async (req, res) => {
     const teacherId = req.user.id;
     try {
         const course = await db_1.default.course.create({
-            data: { title, description, price: parseFloat(price), teacherId }
+            data: { title, description, price: parseFloat(price), teacherId, status: 'DRAFT' }
         });
         res.status(201).json(course);
     }
@@ -68,7 +68,7 @@ exports.createCourse = createCourse;
 const getAllCourses = async (req, res) => {
     try {
         const { search } = req.query;
-        const where = {};
+        const where = { status: 'PUBLISHED' };
         if (search) {
             where.OR = [
                 { title: { contains: String(search) } },
@@ -107,6 +107,140 @@ const getTeacherCourses = async (req, res) => {
     }
 };
 exports.getTeacherCourses = getTeacherCourses;
+const updateCourse = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const { title, description, price, status } = req.body;
+        const course = await db_1.default.course.findUnique({ where: { id } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        const updated = await db_1.default.course.update({
+            where: { id },
+            data: {
+                title: typeof title === 'string' ? title : undefined,
+                description: typeof description === 'string' ? description : undefined,
+                price: price !== undefined ? parseFloat(price) : undefined,
+                status: typeof status === 'string' ? status : undefined,
+            }
+        });
+        res.json(updated);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la mise à jour du cours' });
+    }
+};
+exports.updateCourse = updateCourse;
+const deleteCourse = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const course = await db_1.default.course.findUnique({ where: { id } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        await db_1.default.$transaction([
+            db_1.default.grade.deleteMany({ where: { submission: { assignment: { courseId: id } } } }),
+            db_1.default.submission.deleteMany({ where: { assignment: { courseId: id } } }),
+            db_1.default.assignment.deleteMany({ where: { courseId: id } }),
+            db_1.default.quizResult.deleteMany({ where: { quiz: { courseId: id } } }),
+            db_1.default.question.deleteMany({ where: { quiz: { courseId: id } } }),
+            db_1.default.quiz.deleteMany({ where: { courseId: id } }),
+            db_1.default.progress.deleteMany({ where: { enrollment: { courseId: id } } }),
+            db_1.default.enrollment.deleteMany({ where: { courseId: id } }),
+            db_1.default.courseContent.deleteMany({ where: { module: { courseId: id } } }),
+            db_1.default.courseModule.deleteMany({ where: { courseId: id } }),
+            db_1.default.course.delete({ where: { id } }),
+        ]);
+        res.json({ message: 'Cours supprimé' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la suppression du cours' });
+    }
+};
+exports.deleteCourse = deleteCourse;
+const getCourseEnrollments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const course = await db_1.default.course.findUnique({ where: { id } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        const enrollments = await db_1.default.enrollment.findMany({
+            where: { courseId: id },
+            include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } } },
+            orderBy: { id: 'desc' }
+        });
+        res.json(enrollments);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la récupération des inscriptions du cours' });
+    }
+};
+exports.getCourseEnrollments = getCourseEnrollments;
+const removeCourseEnrollment = async (req, res) => {
+    try {
+        const { id, enrollmentId } = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const course = await db_1.default.course.findUnique({ where: { id } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        const enrollment = await db_1.default.enrollment.findUnique({ where: { id: enrollmentId } });
+        if (!enrollment || enrollment.courseId !== id) {
+            return res.status(404).json({ message: 'Inscription non trouvée' });
+        }
+        await db_1.default.enrollment.delete({ where: { id: enrollmentId } });
+        res.json({ message: 'Étudiant retiré du cours' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la suppression de l\'inscription' });
+    }
+};
+exports.removeCourseEnrollment = removeCourseEnrollment;
+const addCourseEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId: targetUserId } = req.body;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const course = await db_1.default.course.findUnique({ where: { id } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        const targetUser = await db_1.default.user.findUnique({ where: { id: targetUserId } });
+        if (!targetUser)
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        if (targetUser.role !== 'STUDENT')
+            return res.status(400).json({ message: 'Seuls les étudiants peuvent être inscrits' });
+        const enrollment = await db_1.default.enrollment.create({
+            data: { userId: targetUserId, courseId: id },
+            include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } } }
+        });
+        await (0, notificationController_1.createNotification)(targetUserId, 'Inscription par enseignant', `Vous avez été inscrit au cours "${course.title}".`, 'INFO');
+        res.status(201).json(enrollment);
+    }
+    catch (error) {
+        res.status(400).json({ message: 'Déjà inscrit ou erreur lors de l\'inscription' });
+    }
+};
+exports.addCourseEnrollment = addCourseEnrollment;
 const enrollInCourse = async (req, res) => {
     const { courseId } = req.body;
     const userId = req.user.id;

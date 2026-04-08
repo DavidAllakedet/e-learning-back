@@ -95,6 +95,40 @@ export const getStudentQuizzes = async (req: Request, res: Response) => {
   }
 };
 
+export const getTeacherQuizzes = async (req: Request, res: Response) => {
+  try {
+    const teacherId = (req as any).user.id;
+    const quizzes = await prisma.quiz.findMany({
+      where: {
+        course: { teacherId }
+      },
+      include: {
+        course: { select: { id: true, title: true } },
+        questions: { select: { id: true } },
+        results: { select: { score: true } }
+      },
+      orderBy: { title: 'asc' }
+    });
+
+    const mapped = quizzes.map(q => {
+      const participants = q.results.length;
+      const avgScore = participants > 0 ? q.results.reduce((acc, r) => acc + r.score, 0) / participants : null;
+      return {
+        id: q.id,
+        title: q.title,
+        course: q.course,
+        questionsCount: q.questions.length,
+        participants,
+        avgScore
+      };
+    });
+
+    res.json(mapped);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des quiz enseignant' });
+  }
+};
+
 // Soumettre un quiz et calculer le score
 export const submitQuiz = async (req: Request, res: Response) => {
   try {
@@ -167,5 +201,45 @@ export const deleteQuiz = async (req: Request, res: Response) => {
     res.json({ message: 'Quiz supprimé avec succès' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la suppression du quiz' });
+  }
+};
+
+export const updateQuiz = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const teacherId = (req as any).user.id;
+    const { title, questions } = req.body;
+    type QuestionInput = { text: string; options: string[]; answer: string };
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id },
+      include: { course: true }
+    });
+    if (!quiz) return res.status(404).json({ message: 'Quiz non trouvé' });
+    if (quiz.course.teacherId !== teacherId) return res.status(403).json({ message: 'Accès interdit' });
+
+    const updated = await prisma.quiz.update({
+      where: { id },
+      data: { title }
+    });
+
+    await prisma.question.deleteMany({ where: { quizId: id } });
+    await prisma.question.createMany({
+      data: ((questions || []) as QuestionInput[]).map((q) => ({
+        text: q.text,
+        options: JSON.stringify(q.options || []),
+        answer: q.answer,
+        quizId: id
+      }))
+    });
+
+    const full = await prisma.quiz.findUnique({
+      where: { id },
+      include: { questions: true }
+    });
+
+    res.json(full || updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour du quiz' });
   }
 };

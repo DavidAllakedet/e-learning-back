@@ -4307,6 +4307,7 @@ export namespace Prisma {
     title: string | null
     description: string | null
     price: number | null
+    status: string | null
     teacherId: string | null
   }
 
@@ -4315,6 +4316,7 @@ export namespace Prisma {
     title: string | null
     description: string | null
     price: number | null
+    status: string | null
     teacherId: string | null
   }
 
@@ -4323,6 +4325,7 @@ export namespace Prisma {
     title: number
     description: number
     price: number
+    status: number
     teacherId: number
     _all: number
   }
@@ -4341,6 +4344,7 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
+    status?: true
     teacherId?: true
   }
 
@@ -4349,6 +4353,7 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
+    status?: true
     teacherId?: true
   }
 
@@ -4357,6 +4362,7 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
+    status?: true
     teacherId?: true
     _all?: true
   }
@@ -4452,6 +4458,7 @@ export namespace Prisma {
     title: string
     description: string
     price: number
+    status: string
     teacherId: string
     _count: CourseCountAggregateOutputType | null
     _avg: CourseAvgAggregateOutputType | null
@@ -4479,6 +4486,7 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
+    status?: boolean
     teacherId?: boolean
     assignments?: boolean | Course$assignmentsArgs<ExtArgs>
     teacher?: boolean | UserDefaultArgs<ExtArgs>
@@ -4493,6 +4501,7 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
+    status?: boolean
     teacherId?: boolean
     teacher?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["course"]>
@@ -4502,6 +4511,7 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
+    status?: boolean
     teacherId?: boolean
   }
 
@@ -4531,6 +4541,7 @@ export namespace Prisma {
       title: string
       description: string
       price: number
+      status: string
       teacherId: string
     }, ExtArgs["result"]["course"]>
     composites: {}
@@ -4934,6 +4945,7 @@ export namespace Prisma {
     readonly title: FieldRef<"Course", 'String'>
     readonly description: FieldRef<"Course", 'String'>
     readonly price: FieldRef<"Course", 'Float'>
+    readonly status: FieldRef<"Course", 'String'>
     readonly teacherId: FieldRef<"Course", 'String'>
   }
     
@@ -14872,6 +14884,7 @@ export namespace Prisma {
     title: 'title',
     description: 'description',
     price: 'price',
+    status: 'status',
     teacherId: 'teacherId'
   };
 
@@ -15234,6 +15247,7 @@ export namespace Prisma {
     title?: StringFilter<"Course"> | string
     description?: StringFilter<"Course"> | string
     price?: FloatFilter<"Course"> | number
+    status?: StringFilter<"Course"> | string
     teacherId?: StringFilter<"Course"> | string
     assignments?: AssignmentListRelationFilter
     teacher?: XOR<UserRelationFilter, UserWhereInput>
@@ -15247,6 +15261,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    status?: SortOrder
     teacherId?: SortOrder
     assignments?: AssignmentOrderByRelationAggregateInput
     teacher?: UserOrderByWithRelationInput
@@ -15263,6 +15278,7 @@ export namespace Prisma {
     title?: StringFilter<"Course"> | string
     description?: StringFilter<"Course"> | string
     price?: FloatFilter<"Course"> | number
+    status?: StringFilter<"Course"> | string
     teacherId?: StringFilter<"Course"> | string
     assignments?: AssignmentListRelationFilter
     teacher?: XOR<UserRelationFilter, UserWhereInput>
@@ -15276,6 +15292,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    status?: SortOrder
     teacherId?: SortOrder
     _count?: CourseCountOrderByAggregateInput
     _avg?: CourseAvgOrderByAggregateInput
@@ -15292,6 +15309,7 @@ export namespace Prisma {
     title?: StringWithAggregatesFilter<"Course"> | string
     description?: StringWithAggregatesFilter<"Course"> | string
     price?: FloatWithAggregatesFilter<"Course"> | number
+    status?: StringWithAggregatesFilter<"Course"> | string
     teacherId?: StringWithAggregatesFilter<"Course"> | string
   }
 
@@ -16076,6 +16094,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentCreateNestedManyWithoutCourseInput
     teacher: UserCreateNestedOneWithoutTaughtCoursesInput
     modules?: CourseModuleCreateNestedManyWithoutCourseInput
@@ -16088,6 +16107,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
     assignments?: AssignmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: CourseModuleUncheckedCreateNestedManyWithoutCourseInput
@@ -16100,6 +16120,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUpdateManyWithoutCourseNestedInput
     teacher?: UserUpdateOneRequiredWithoutTaughtCoursesNestedInput
     modules?: CourseModuleUpdateManyWithoutCourseNestedInput
@@ -16112,6 +16133,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: CourseModuleUncheckedUpdateManyWithoutCourseNestedInput
@@ -16124,6 +16146,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
   }
 
@@ -16132,6 +16155,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
   }
 
   export type CourseUncheckedUpdateManyInput = {
@@ -16139,6 +16163,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -16970,6 +16995,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    status?: SortOrder
     teacherId?: SortOrder
   }
 
@@ -16982,6 +17008,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    status?: SortOrder
     teacherId?: SortOrder
   }
 
@@ -16990,6 +17017,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    status?: SortOrder
     teacherId?: SortOrder
   }
 
@@ -18395,6 +18423,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentCreateNestedManyWithoutCourseInput
     modules?: CourseModuleCreateNestedManyWithoutCourseInput
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
@@ -18406,6 +18435,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: CourseModuleUncheckedCreateNestedManyWithoutCourseInput
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -18564,6 +18594,7 @@ export namespace Prisma {
     title?: StringFilter<"Course"> | string
     description?: StringFilter<"Course"> | string
     price?: FloatFilter<"Course"> | number
+    status?: StringFilter<"Course"> | string
     teacherId?: StringFilter<"Course"> | string
   }
 
@@ -19129,6 +19160,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentCreateNestedManyWithoutCourseInput
     teacher: UserCreateNestedOneWithoutTaughtCoursesInput
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
@@ -19140,6 +19172,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
     assignments?: AssignmentUncheckedCreateNestedManyWithoutCourseInput
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -19194,6 +19227,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUpdateManyWithoutCourseNestedInput
     teacher?: UserUpdateOneRequiredWithoutTaughtCoursesNestedInput
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
@@ -19205,6 +19239,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUncheckedUpdateManyWithoutCourseNestedInput
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -19256,6 +19291,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentCreateNestedManyWithoutCourseInput
     teacher: UserCreateNestedOneWithoutTaughtCoursesInput
     modules?: CourseModuleCreateNestedManyWithoutCourseInput
@@ -19267,6 +19303,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
     assignments?: AssignmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: CourseModuleUncheckedCreateNestedManyWithoutCourseInput
@@ -19368,6 +19405,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUpdateManyWithoutCourseNestedInput
     teacher?: UserUpdateOneRequiredWithoutTaughtCoursesNestedInput
     modules?: CourseModuleUpdateManyWithoutCourseNestedInput
@@ -19379,6 +19417,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: CourseModuleUncheckedUpdateManyWithoutCourseNestedInput
@@ -19537,6 +19576,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     assignments?: AssignmentCreateNestedManyWithoutCourseInput
     teacher: UserCreateNestedOneWithoutTaughtCoursesInput
     modules?: CourseModuleCreateNestedManyWithoutCourseInput
@@ -19548,6 +19588,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
     assignments?: AssignmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: CourseModuleUncheckedCreateNestedManyWithoutCourseInput
@@ -19625,6 +19666,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUpdateManyWithoutCourseNestedInput
     teacher?: UserUpdateOneRequiredWithoutTaughtCoursesNestedInput
     modules?: CourseModuleUpdateManyWithoutCourseNestedInput
@@ -19636,6 +19678,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: CourseModuleUncheckedUpdateManyWithoutCourseNestedInput
@@ -19859,6 +19902,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacher: UserCreateNestedOneWithoutTaughtCoursesInput
     modules?: CourseModuleCreateNestedManyWithoutCourseInput
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
@@ -19870,6 +19914,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
     teacherId: string
     modules?: CourseModuleUncheckedCreateNestedManyWithoutCourseInput
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
@@ -19922,6 +19967,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacher?: UserUpdateOneRequiredWithoutTaughtCoursesNestedInput
     modules?: CourseModuleUpdateManyWithoutCourseNestedInput
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
@@ -19933,6 +19979,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     teacherId?: StringFieldUpdateOperationsInput | string
     modules?: CourseModuleUncheckedUpdateManyWithoutCourseNestedInput
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -20316,6 +20363,7 @@ export namespace Prisma {
     title: string
     description: string
     price?: number
+    status?: string
   }
 
   export type EnrollmentCreateManyUserInput = {
@@ -20358,6 +20406,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUpdateManyWithoutCourseNestedInput
     modules?: CourseModuleUpdateManyWithoutCourseNestedInput
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
@@ -20369,6 +20418,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
     assignments?: AssignmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: CourseModuleUncheckedUpdateManyWithoutCourseNestedInput
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
@@ -20380,6 +20430,7 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     price?: FloatFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
   }
 
   export type EnrollmentUpdateWithoutUserInput = {

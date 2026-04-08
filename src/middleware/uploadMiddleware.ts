@@ -5,7 +5,7 @@ import fs from 'fs';
 
 // S'assurer que les dossiers d'upload existent
 const baseDir = 'uploads';
-const dirs = ['videos', 'pdfs', 'others'];
+const dirs = ['videos', 'pdfs', 'avatars', 'others'];
 
 if (!fs.existsSync(baseDir)) {
   fs.mkdirSync(baseDir);
@@ -49,4 +49,30 @@ export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: { fileSize: 100 * 1024 * 1024 } // Limite à 100MB pour les vidéos
+});
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, path.join(baseDir, 'avatars'));
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const avatarFileFilter = (_req: any, file: any, cb: any) => {
+  const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Seuls les fichiers PNG, JPG, JPEG et WEBP sont autorisés.'));
+  }
+};
+
+export const uploadAvatar = multer({
+  storage: avatarStorage,
+  fileFilter: avatarFileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }
 });

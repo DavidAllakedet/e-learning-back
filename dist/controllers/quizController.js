@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteQuiz = exports.submitQuiz = exports.getStudentQuizzes = exports.getQuizById = exports.getQuizzesByCourse = exports.createQuiz = void 0;
+exports.updateQuiz = exports.deleteQuiz = exports.submitQuiz = exports.getTeacherQuizzes = exports.getStudentQuizzes = exports.getQuizById = exports.getQuizzesByCourse = exports.createQuiz = void 0;
 const db_1 = __importDefault(require("../config/db"));
 // Créer un quiz
 const createQuiz = async (req, res) => {
@@ -99,6 +99,39 @@ const getStudentQuizzes = async (req, res) => {
     }
 };
 exports.getStudentQuizzes = getStudentQuizzes;
+const getTeacherQuizzes = async (req, res) => {
+    try {
+        const teacherId = req.user.id;
+        const quizzes = await db_1.default.quiz.findMany({
+            where: {
+                course: { teacherId }
+            },
+            include: {
+                course: { select: { id: true, title: true } },
+                questions: { select: { id: true } },
+                results: { select: { score: true } }
+            },
+            orderBy: { title: 'asc' }
+        });
+        const mapped = quizzes.map(q => {
+            const participants = q.results.length;
+            const avgScore = participants > 0 ? q.results.reduce((acc, r) => acc + r.score, 0) / participants : null;
+            return {
+                id: q.id,
+                title: q.title,
+                course: q.course,
+                questionsCount: q.questions.length,
+                participants,
+                avgScore
+            };
+        });
+        res.json(mapped);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la récupération des quiz enseignant' });
+    }
+};
+exports.getTeacherQuizzes = getTeacherQuizzes;
 // Soumettre un quiz et calculer le score
 const submitQuiz = async (req, res) => {
     try {
@@ -170,3 +203,40 @@ const deleteQuiz = async (req, res) => {
     }
 };
 exports.deleteQuiz = deleteQuiz;
+const updateQuiz = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const teacherId = req.user.id;
+        const { title, questions } = req.body;
+        const quiz = await db_1.default.quiz.findUnique({
+            where: { id },
+            include: { course: true }
+        });
+        if (!quiz)
+            return res.status(404).json({ message: 'Quiz non trouvé' });
+        if (quiz.course.teacherId !== teacherId)
+            return res.status(403).json({ message: 'Accès interdit' });
+        const updated = await db_1.default.quiz.update({
+            where: { id },
+            data: { title }
+        });
+        await db_1.default.question.deleteMany({ where: { quizId: id } });
+        await db_1.default.question.createMany({
+            data: (questions || []).map((q) => ({
+                text: q.text,
+                options: JSON.stringify(q.options || []),
+                answer: q.answer,
+                quizId: id
+            }))
+        });
+        const full = await db_1.default.quiz.findUnique({
+            where: { id },
+            include: { questions: true }
+        });
+        res.json(full || updated);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la mise à jour du quiz' });
+    }
+};
+exports.updateQuiz = updateQuiz;
