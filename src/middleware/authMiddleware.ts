@@ -22,7 +22,13 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
 export const authorize = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;
-    if (!user || !roles.includes(user.role)) {
+    if (!user) {
+      return res.status(403).json({ message: 'Permissions insuffisantes pour cette action' });
+    }
+    if (user.role === 'SUPER_ADMIN') {
+      return next();
+    }
+    if (!roles.includes(user.role)) {
       return res.status(403).json({ message: 'Permissions insuffisantes pour cette action' });
     }
     next();

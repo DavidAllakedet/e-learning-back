@@ -60,6 +60,41 @@ export const getQuizById = async (req: Request, res: Response) => {
   }
 };
 
+// Obtenir les quiz disponibles pour un étudiant (uniquement ses cours)
+export const getStudentQuizzes = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const quizzes = await prisma.quiz.findMany({
+      where: {
+        course: {
+          enrollments: {
+            some: { userId }
+          }
+        }
+      },
+      include: {
+        course: { select: { id: true, title: true } },
+        results: {
+          where: { userId }
+        }
+      },
+      orderBy: { title: 'asc' }
+    });
+
+    res.json(
+      quizzes.map(q => ({
+        id: q.id,
+        title: q.title,
+        course: q.course,
+        bestScore: q.results[0]?.score ?? null,
+        attemptsUsed: q.results.length,
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des quiz étudiant' });
+  }
+};
+
 // Soumettre un quiz et calculer le score
 export const submitQuiz = async (req: Request, res: Response) => {
   try {
@@ -90,11 +125,47 @@ export const submitQuiz = async (req: Request, res: Response) => {
       };
     });
 
-    // Enregistrer la soumission (vous pouvez ajouter un modèle Submission pour les quiz si nécessaire)
-    // Pour l'instant, nous renvoyons juste le score et les résultats
-    res.json({ score, totalQuestions: quiz.questions.length, results });
+    // Enregistrer ou mettre à jour le résultat du quiz
+    const finalScore = (score / quiz.questions.length) * 100;
+
+    const quizResult = await prisma.quizResult.upsert({
+      where: {
+        userId_quizId: {
+          userId,
+          quizId,
+        },
+      },
+      update: {
+        score: finalScore,
+        createdAt: new Date(),
+      },
+      create: {
+        userId,
+        quizId,
+        score: finalScore,
+      },
+    });
+
+    res.json({ 
+      score, 
+      totalQuestions: quiz.questions.length, 
+      percentage: finalScore,
+      results,
+      quizResult 
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erreur lors de la soumission du quiz' });
+  }
+};
+
+export const deleteQuiz = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.question.deleteMany({ where: { quizId: id } });
+    await prisma.quiz.delete({ where: { id } });
+    res.json({ message: 'Quiz supprimé avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression du quiz' });
   }
 };

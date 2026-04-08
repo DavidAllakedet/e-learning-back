@@ -14,19 +14,19 @@ const generateToken = (id: string, role: string) => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, password, firstName, lastName, role, avatar, university, className, interests, institution, specialty, bio } = req.body;
     
     const userExists = await prisma.user.findUnique({ where: { email } });
     if (userExists) return res.status(400).json({ message: 'Utilisateur déjà inscrit' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, firstName, lastName, role: role || 'STUDENT' },
+      data: { email, password: hashedPassword, firstName, lastName, role: role || 'STUDENT', avatar, university, className, interests, institution, specialty, bio },
     });
 
     res.status(201).json({
       token: generateToken(user.id, user.role),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName }
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, avatar: user.avatar }
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de l\'inscription', error });
@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.json({
       token: generateToken(user.id, user.role),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName }
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, avatar: user.avatar }
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la connexion', error });

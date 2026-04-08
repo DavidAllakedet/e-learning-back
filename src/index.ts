@@ -2,16 +2,25 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import courseRoutes from './routes/courseRoutes';
-import quizRoutes from './routes/quizRoutes'; // Importation des routes de quiz
+import quizRoutes from './routes/quizRoutes';
+import progressRoutes from './routes/progressRoutes';
+import assignmentRoutes from './routes/assignmentRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
-import path from 'path'; // Pour servir les fichiers statiques
+import path from 'path';
 
 dotenv.config();
 const app = express();
 
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Nécessaire pour servir les images/vidéos localement
+}));
+app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 
@@ -23,6 +32,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/quizzes', quizRoutes); // Ajout des routes de quiz
+app.use('/api/progress', progressRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

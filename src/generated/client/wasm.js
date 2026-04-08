@@ -126,8 +126,25 @@ exports.Prisma.UserScalarFieldEnum = {
   firstName: 'firstName',
   lastName: 'lastName',
   role: 'role',
+  avatar: 'avatar',
+  university: 'university',
+  className: 'className',
+  interests: 'interests',
+  institution: 'institution',
+  specialty: 'specialty',
+  bio: 'bio',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  message: 'message',
+  type: 'type',
+  read: 'read',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CourseScalarFieldEnum = {
@@ -170,6 +187,14 @@ exports.Prisma.QuizScalarFieldEnum = {
   id: 'id',
   title: 'title',
   courseId: 'courseId'
+};
+
+exports.Prisma.QuizResultScalarFieldEnum = {
+  id: 'id',
+  score: 'score',
+  userId: 'userId',
+  quizId: 'quizId',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.QuestionScalarFieldEnum = {
@@ -217,12 +242,14 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  Notification: 'Notification',
   Course: 'Course',
   CourseModule: 'CourseModule',
   CourseContent: 'CourseContent',
   Enrollment: 'Enrollment',
   Progress: 'Progress',
   Quiz: 'Quiz',
+  QuizResult: 'QuizResult',
   Question: 'Question',
   Assignment: 'Assignment',
   Submission: 'Submission',

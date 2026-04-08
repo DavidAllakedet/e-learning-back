@@ -1,8 +1,57 @@
 // d:\PROJETS\COURS REACT\e-l\backend\src\controllers\courseController.ts
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { createNotification } from './notificationController';
 
 // Course Controller
+export const getEnrolledCourses = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          include: {
+            teacher: { select: { firstName: true, lastName: true } },
+            modules: {
+              include: { contents: true }
+            },
+            quizzes: {
+              include: {
+                results: {
+                  where: { userId }
+                }
+              }
+            }
+          }
+        },
+        progress: true
+      }
+    });
+
+    const coursesWithProgress = enrollments.map(e => {
+      const totalContents = e.course.modules.reduce((acc, mod) => acc + mod.contents.length, 0);
+      const totalQuizzes = e.course.quizzes.length;
+      const totalItems = totalContents + totalQuizzes;
+
+      const completedContents = e.progress.filter(p => p.completed).length;
+      const completedQuizzes = e.course.quizzes.filter(q => q.results.length > 0).length;
+      const completedItems = completedContents + completedQuizzes;
+
+      const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+      return {
+        ...e.course,
+        progress: percentage
+      };
+    });
+
+    res.json(coursesWithProgress);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des cours inscrits' });
+  }
+};
+
 export const createCourse = async (req: Request, res: Response) => {
   const { title, description, price } = req.body;
   const teacherId = (req as any).user.id;
@@ -16,14 +65,45 @@ export const createCourse = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllCourses = async (_req: Request, res: Response) => {
+export const getAllCourses = async (req: Request, res: Response) => {
   try {
+    const { search } = req.query;
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
+        { title: { contains: String(search) } },
+        { description: { contains: String(search) } }
+      ];
+    }
+
     const courses = await prisma.course.findMany({
-      include: { teacher: { select: { firstName: true, lastName: true } } }
+      where,
+      include: { 
+        teacher: { select: { firstName: true, lastName: true } },
+        _count: { select: { enrollments: true } }
+      }
     });
     res.json(courses);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération des cours' });
+  }
+};
+
+export const getTeacherCourses = async (req: Request, res: Response) => {
+  try {
+    const teacherId = (req as any).user.id;
+    const courses = await prisma.course.findMany({
+      where: { teacherId },
+      include: {
+        teacher: { select: { firstName: true, lastName: true } },
+        _count: { select: { enrollments: true } }
+      },
+      orderBy: { title: 'asc' }
+    });
+    res.json(courses);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des cours enseignant' });
   }
 };
 
@@ -32,8 +112,18 @@ export const enrollInCourse = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
     const enrollment = await prisma.enrollment.create({
-      data: { userId, courseId }
+      data: { userId, courseId },
+      include: { course: { select: { title: true } } }
     });
+
+    // Notification
+    await createNotification(
+      userId,
+      'Inscription réussie',
+      `Vous êtes maintenant inscrit au cours "${enrollment.course.title}".`,
+      'SUCCESS'
+    );
+
     res.status(201).json({ message: 'Inscription réussie', enrollment });
   } catch (error) {
     res.status(400).json({ message: 'Déjà inscrit ou erreur lors de l\'inscription' });
@@ -89,8 +179,25 @@ export const addContent = async (req: Request, res: Response) => {
     const url = `/uploads/${subDir}/${file.filename}`;
     
     const content = await prisma.courseContent.create({
-      data: { title, type, url, moduleId }
+      data: { title, type, url, moduleId },
+      include: { module: { include: { course: { select: { id: true, title: true } } } } }
     });
+
+    // Notifier les étudiants
+    const enrollments = await prisma.enrollment.findMany({
+      where: { courseId: content.module.course.id },
+      select: { userId: true }
+    });
+
+    for (const enrollment of enrollments) {
+      await createNotification(
+        enrollment.userId,
+        'Nouveau contenu',
+        `Une nouvelle leçon "${title}" a été ajoutée au cours "${content.module.course.title}".`,
+        'INFO'
+      );
+    }
+
     res.status(201).json(content);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de l\'ajout du contenu' });
@@ -99,6 +206,8 @@ export const addContent = async (req: Request, res: Response) => {
 
 export const getCourseDetails = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const userId = (req as any).user?.id;
+  const role = (req as any).user?.role as string | undefined;
   try {
     const course = await prisma.course.findUnique({
       where: { id },
@@ -106,10 +215,43 @@ export const getCourseDetails = async (req: Request, res: Response) => {
         teacher: { select: { firstName: true, lastName: true } },
         modules: {
           include: { contents: true }
-        }
+        },
+        quizzes: true
       }
     });
-    res.json(course);
+
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+
+    // Vérifier si l'utilisateur est inscrit
+    let isEnrolled = false;
+    if (userId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId: id } }
+      });
+      isEnrolled = !!enrollment;
+    }
+
+    const canAccessFullContent =
+      role === 'ADMIN' ||
+      role === 'SUPER_ADMIN' ||
+      (role === 'TEACHER' && course.teacherId === userId) ||
+      (role === 'STUDENT' && isEnrolled);
+
+    if (!canAccessFullContent) {
+      return res.json({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        price: course.price,
+        teacherId: course.teacherId,
+        teacher: course.teacher,
+        modules: [],
+        quizzes: [],
+        isEnrolled,
+      });
+    }
+
+    res.json({ ...course, isEnrolled });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération du cours' });
   }
