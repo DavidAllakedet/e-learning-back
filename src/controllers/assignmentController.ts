@@ -8,6 +8,8 @@ import { createNotification } from './notificationController';
 export const createAssignment = async (req: Request, res: Response) => {
   try {
     const { title, description, dueDate, courseId } = req.body;
+    const file = req.file;
+
     const assignment = await prisma.assignment.create({
       data: {
         title,
@@ -196,5 +198,77 @@ export const gradeSubmission = async (req: Request, res: Response) => {
     res.status(201).json(grade);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la notation' });
+  }
+};
+
+// Obtenir tous les devoirs d'un enseignant
+export const getTeacherAssignments = async (req: Request, res: Response) => {
+  try {
+    const teacherId = (req as any).user.id;
+    const assignments = await prisma.assignment.findMany({
+      where: {
+        course: { teacherId }
+      },
+      include: {
+        course: { select: { id: true, title: true } }
+      },
+      orderBy: { dueDate: 'asc' }
+    });
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des devoirs' });
+  }
+};
+
+// Mettre à jour un devoir
+export const updateAssignment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const teacherId = (req as any).user.id;
+    const { title, description, dueDate } = req.body;
+
+    const assignment = await prisma.assignment.findUnique({
+      where: { id },
+      include: { course: true }
+    });
+
+    if (!assignment) return res.status(404).json({ message: 'Devoir non trouvé' });
+    if (assignment.course.teacherId !== teacherId) return res.status(403).json({ message: 'Accès interdit' });
+
+    const updated = await prisma.assignment.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(dueDate && { dueDate: new Date(dueDate) })
+      }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour' });
+  }
+};
+
+// Supprimer un devoir
+export const deleteAssignment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const teacherId = (req as any).user.id;
+
+    const assignment = await prisma.assignment.findUnique({
+      where: { id },
+      include: { course: true }
+    });
+
+    if (!assignment) return res.status(404).json({ message: 'Devoir non trouvé' });
+    if (assignment.course.teacherId !== teacherId) return res.status(403).json({ message: 'Accès interdit' });
+
+    await prisma.submission.deleteMany({ where: { assignmentId: id } });
+    await prisma.assignment.delete({ where: { id } });
+
+    res.json({ message: 'Devoir supprimé' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression' });
   }
 };

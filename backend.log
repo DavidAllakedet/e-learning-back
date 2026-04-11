@@ -1,0 +1,12 @@
+
+> backend@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/index.ts
+
+[INFO] 08:34:50 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+Testing database connection...
+🚀 Serveur démarré sur http://localhost:5000
+✅ Database connected successfully
+[0mOPTIONS /api/notifications [32m204[0m 1.254 ms - 0[0m
+[0mGET /api/notifications [36m304[0m 6.039 ms - -[0m
+[0mOPTIONS /api/notifications [32m204[0m 0.338 ms - 0[0m
+[0mGET /api/notifications [36m304[0m 4.064 ms - -[0m

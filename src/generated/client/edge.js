@@ -84,6 +84,9 @@ Prisma.NullTypes = {
  * Enums
  */
 exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 });
 
@@ -235,7 +238,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\src\\generated\\client",
+      "value": "/Projets/e-l/e-learning-back/src/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -244,12 +247,16 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "debian-openssl-3.0.x",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "linux-musl-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\PROJETS\\COURS REACT\\e-l\\backend\\prisma\\schema.prisma",
+    "sourceFilePath": "/Projets/e-l/e-learning-back/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -262,17 +269,17 @@ const config = {
   "datasourceNames": [
     "db"
   ],
-  "activeProvider": "sqlite",
+  "activeProvider": "mysql",
   "inlineDatasources": {
     "db": {
       "url": {
-        "fromEnvVar": null,
-        "value": "file:./dev.db"
+        "fromEnvVar": "DATABASE_URL",
+        "value": null
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nmodel User {\n  id            String         @id @default(uuid())\n  email         String         @unique\n  password      String\n  firstName     String\n  lastName      String\n  role          String         @default(\"STUDENT\")\n  avatar        String?\n  university    String?\n  className     String?\n  interests     String?\n  institution   String?\n  specialty     String?\n  bio           String?\n  createdAt     DateTime       @default(now())\n  updatedAt     DateTime       @updatedAt\n  taughtCourses Course[]       @relation(\"TeacherCourses\")\n  enrollments   Enrollment[]\n  grades        Grade[]\n  submissions   Submission[]\n  quizResults   QuizResult[]\n  notifications Notification[]\n}\n\nmodel Notification {\n  id        String   @id @default(uuid())\n  userId    String\n  title     String\n  message   String\n  type      String   @default(\"INFO\") // INFO, SUCCESS, WARNING, ERROR\n  read      Boolean  @default(false)\n  createdAt DateTime @default(now())\n  user      User     @relation(fields: [userId], references: [id])\n}\n\nmodel Course {\n  id          String         @id @default(uuid())\n  title       String\n  description String\n  price       Float          @default(0)\n  status      String         @default(\"DRAFT\")\n  teacherId   String\n  assignments Assignment[]\n  teacher     User           @relation(\"TeacherCourses\", fields: [teacherId], references: [id])\n  modules     CourseModule[]\n  enrollments Enrollment[]\n  quizzes     Quiz[]\n}\n\nmodel CourseModule {\n  id       String          @id @default(uuid())\n  title    String\n  courseId String\n  contents CourseContent[]\n  course   Course          @relation(fields: [courseId], references: [id])\n}\n\nmodel CourseContent {\n  id       String       @id @default(uuid())\n  title    String\n  type     String\n  url      String\n  moduleId String\n  module   CourseModule @relation(fields: [moduleId], references: [id])\n}\n\nmodel Enrollment {\n  id       String     @id @default(uuid())\n  userId   String\n  courseId String\n  course   Course     @relation(fields: [courseId], references: [id])\n  user     User       @relation(fields: [userId], references: [id])\n  progress Progress[]\n\n  @@unique([userId, courseId])\n}\n\nmodel Progress {\n  id              String     @id @default(uuid())\n  userId          String\n  courseContentId String\n  completed       Boolean    @default(false)\n  enrollmentId    String\n  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])\n\n  @@unique([userId, courseContentId])\n}\n\nmodel Quiz {\n  id        String       @id @default(uuid())\n  title     String\n  courseId  String\n  questions Question[]\n  course    Course       @relation(fields: [courseId], references: [id])\n  results   QuizResult[]\n}\n\nmodel QuizResult {\n  id        String   @id @default(uuid())\n  score     Float\n  userId    String\n  quizId    String\n  createdAt DateTime @default(now())\n  user      User     @relation(fields: [userId], references: [id])\n  quiz      Quiz     @relation(fields: [quizId], references: [id])\n\n  @@unique([userId, quizId])\n}\n\nmodel Question {\n  id      String @id @default(uuid())\n  text    String\n  options String\n  answer  String\n  quizId  String\n  quiz    Quiz   @relation(fields: [quizId], references: [id])\n}\n\nmodel Assignment {\n  id          String       @id @default(uuid())\n  title       String\n  description String\n  dueDate     DateTime\n  courseId    String\n  course      Course       @relation(fields: [courseId], references: [id])\n  submissions Submission[]\n}\n\nmodel Submission {\n  id           String     @id @default(uuid())\n  fileUrl      String\n  submittedAt  DateTime   @default(now())\n  userId       String\n  assignmentId String\n  grade        Grade?\n  assignment   Assignment @relation(fields: [assignmentId], references: [id])\n  user         User       @relation(fields: [userId], references: [id])\n}\n\nmodel Grade {\n  id           String     @id @default(uuid())\n  value        Float\n  feedback     String?\n  submissionId String     @unique\n  teacherId    String\n  teacher      User       @relation(fields: [teacherId], references: [id])\n  submission   Submission @relation(fields: [submissionId], references: [id])\n}\n",
-  "inlineSchemaHash": "4eedf52099182fc7b7db31e9e57d82adf54a79bf8f601be055d188c7ef3d6642",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/client\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id            String         @id @default(uuid())\n  email         String         @unique\n  password      String\n  firstName     String\n  lastName      String\n  role          String         @default(\"STUDENT\")\n  avatar        String?\n  university    String?\n  className     String?\n  interests     String?\n  institution   String?\n  specialty     String?\n  bio           String?\n  createdAt     DateTime       @default(now())\n  updatedAt     DateTime       @updatedAt\n  taughtCourses Course[]       @relation(\"TeacherCourses\")\n  enrollments   Enrollment[]\n  grades        Grade[]\n  submissions   Submission[]\n  quizResults   QuizResult[]\n  notifications Notification[]\n}\n\nmodel Notification {\n  id        String   @id @default(uuid())\n  userId    String\n  title     String\n  message   String\n  type      String   @default(\"INFO\") // INFO, SUCCESS, WARNING, ERROR\n  read      Boolean  @default(false)\n  createdAt DateTime @default(now())\n  user      User     @relation(fields: [userId], references: [id])\n}\n\nmodel Course {\n  id          String         @id @default(uuid())\n  title       String\n  description String\n  price       Float          @default(0)\n  status      String         @default(\"DRAFT\")\n  teacherId   String\n  assignments Assignment[]\n  teacher     User           @relation(\"TeacherCourses\", fields: [teacherId], references: [id])\n  modules     CourseModule[]\n  enrollments Enrollment[]\n  quizzes     Quiz[]\n}\n\nmodel CourseModule {\n  id       String          @id @default(uuid())\n  title    String\n  courseId String\n  contents CourseContent[]\n  course   Course          @relation(fields: [courseId], references: [id])\n}\n\nmodel CourseContent {\n  id       String       @id @default(uuid())\n  title    String\n  type     String\n  url      String\n  moduleId String\n  module   CourseModule @relation(fields: [moduleId], references: [id])\n}\n\nmodel Enrollment {\n  id       String     @id @default(uuid())\n  userId   String\n  courseId String\n  course   Course     @relation(fields: [courseId], references: [id])\n  user     User       @relation(fields: [userId], references: [id])\n  progress Progress[]\n\n  @@unique([userId, courseId])\n}\n\nmodel Progress {\n  id              String     @id @default(uuid())\n  userId          String\n  courseContentId String\n  completed       Boolean    @default(false)\n  enrollmentId    String\n  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])\n\n  @@unique([userId, courseContentId])\n}\n\nmodel Quiz {\n  id        String       @id @default(uuid())\n  title     String\n  courseId  String\n  questions Question[]\n  course    Course       @relation(fields: [courseId], references: [id])\n  results   QuizResult[]\n}\n\nmodel QuizResult {\n  id        String   @id @default(uuid())\n  score     Float\n  userId    String\n  quizId    String\n  createdAt DateTime @default(now())\n  user      User     @relation(fields: [userId], references: [id])\n  quiz      Quiz     @relation(fields: [quizId], references: [id])\n\n  @@unique([userId, quizId])\n}\n\nmodel Question {\n  id      String @id @default(uuid())\n  text    String\n  options String\n  answer  String\n  quizId  String\n  quiz    Quiz   @relation(fields: [quizId], references: [id])\n}\n\nmodel Assignment {\n  id          String       @id @default(uuid())\n  title       String\n  description String\n  dueDate     DateTime\n  courseId    String\n  course      Course       @relation(fields: [courseId], references: [id])\n  submissions Submission[]\n}\n\nmodel Submission {\n  id           String     @id @default(uuid())\n  fileUrl      String\n  submittedAt  DateTime   @default(now())\n  userId       String\n  assignmentId String\n  grade        Grade?\n  assignment   Assignment @relation(fields: [assignmentId], references: [id])\n  user         User       @relation(fields: [userId], references: [id])\n}\n\nmodel Grade {\n  id           String     @id @default(uuid())\n  value        Float\n  feedback     String?\n  submissionId String     @unique\n  teacherId    String\n  teacher      User       @relation(fields: [teacherId], references: [id])\n  submission   Submission @relation(fields: [submissionId], references: [id])\n}\n",
+  "inlineSchemaHash": "05aff14bb19b77c50e4f4645c30decb69b8d9366a95679e8e04f3fd775a0830f",
   "copyEngine": true
 }
 config.dirname = '/'
@@ -282,7 +289,9 @@ defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = undefined
 
 config.injectableEdgeEnv = () => ({
-  parsed: {}
+  parsed: {
+    DATABASE_URL: typeof globalThis !== 'undefined' && globalThis['DATABASE_URL'] || typeof process !== 'undefined' && process.env && process.env.DATABASE_URL || undefined
+  }
 })
 
 if (typeof globalThis !== 'undefined' && globalThis['DEBUG'] || typeof process !== 'undefined' && process.env && process.env.DEBUG || undefined) {

@@ -53,15 +53,29 @@ export const getEnrolledCourses = async (req: Request, res: Response) => {
 };
 
 export const createCourse = async (req: Request, res: Response) => {
-  const { title, description, price } = req.body;
+  console.log('=== COURSE CREATION REQUEST ===');
+  console.log('Body:', req.body);
+  console.log('User:', (req as any).user);
+
+  const { title, description, price = 0 } = req.body;
   const teacherId = (req as any).user.id;
+
+  console.log('Parsed data:', { title, description, price, teacherId });
+
   try {
+    // Test database connection
+    console.log('Testing database connection...');
+    await prisma.$connect();
+    console.log('Database connected successfully');
+
     const course = await prisma.course.create({
       data: { title, description, price: parseFloat(price), teacherId, status: 'DRAFT' }
     });
+    console.log('Course created successfully:', course);
     res.status(201).json(course);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création du cours' });
+    console.error('Error creating course:', error);
+    res.status(500).json({ message: 'Erreur lors de la création du cours', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
 
@@ -77,6 +91,7 @@ export const getAllCourses = async (req: Request, res: Response) => {
       ];
     }
 
+    console.log('Fetching courses with where:', JSON.stringify(where));
     const courses = await prisma.course.findMany({
       where,
       include: { 
@@ -84,8 +99,10 @@ export const getAllCourses = async (req: Request, res: Response) => {
         _count: { select: { enrollments: true } }
       }
     });
+    console.log('Courses found:', courses.length);
     res.json(courses);
   } catch (error) {
+    console.error('Error fetching courses:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des cours' });
   }
 };
@@ -358,7 +375,8 @@ export const getCourseDetails = async (req: Request, res: Response) => {
         modules: {
           include: { contents: true }
         },
-        quizzes: true
+        quizzes: true,
+        assignments: true
       }
     });
 

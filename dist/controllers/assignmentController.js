@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.gradeSubmission = exports.submitAssignment = exports.getStudentAssignments = exports.getSubmissionsByTeacher = exports.getAssignmentById = exports.createAssignment = void 0;
+exports.deleteAssignment = exports.updateAssignment = exports.getTeacherAssignments = exports.gradeSubmission = exports.submitAssignment = exports.getStudentAssignments = exports.getSubmissionsByTeacher = exports.getAssignmentById = exports.createAssignment = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const path_1 = __importDefault(require("path"));
 const notificationController_1 = require("./notificationController");
@@ -11,6 +11,7 @@ const notificationController_1 = require("./notificationController");
 const createAssignment = async (req, res) => {
     try {
         const { title, description, dueDate, courseId } = req.body;
+        const file = req.file;
         const assignment = await db_1.default.assignment.create({
             data: {
                 title,
@@ -186,3 +187,74 @@ const gradeSubmission = async (req, res) => {
     }
 };
 exports.gradeSubmission = gradeSubmission;
+// Obtenir tous les devoirs d'un enseignant
+const getTeacherAssignments = async (req, res) => {
+    try {
+        const teacherId = req.user.id;
+        const assignments = await db_1.default.assignment.findMany({
+            where: {
+                course: { teacherId }
+            },
+            include: {
+                course: { select: { id: true, title: true } }
+            },
+            orderBy: { dueDate: 'asc' }
+        });
+        res.json(assignments);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la récupération des devoirs' });
+    }
+};
+exports.getTeacherAssignments = getTeacherAssignments;
+// Mettre à jour un devoir
+const updateAssignment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const teacherId = req.user.id;
+        const { title, description, dueDate } = req.body;
+        const assignment = await db_1.default.assignment.findUnique({
+            where: { id },
+            include: { course: true }
+        });
+        if (!assignment)
+            return res.status(404).json({ message: 'Devoir non trouvé' });
+        if (assignment.course.teacherId !== teacherId)
+            return res.status(403).json({ message: 'Accès interdit' });
+        const updated = await db_1.default.assignment.update({
+            where: { id },
+            data: {
+                ...(title && { title }),
+                ...(description !== undefined && { description }),
+                ...(dueDate && { dueDate: new Date(dueDate) })
+            }
+        });
+        res.json(updated);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la mise à jour' });
+    }
+};
+exports.updateAssignment = updateAssignment;
+// Supprimer un devoir
+const deleteAssignment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const teacherId = req.user.id;
+        const assignment = await db_1.default.assignment.findUnique({
+            where: { id },
+            include: { course: true }
+        });
+        if (!assignment)
+            return res.status(404).json({ message: 'Devoir non trouvé' });
+        if (assignment.course.teacherId !== teacherId)
+            return res.status(403).json({ message: 'Accès interdit' });
+        await db_1.default.submission.deleteMany({ where: { assignmentId: id } });
+        await db_1.default.assignment.delete({ where: { id } });
+        res.json({ message: 'Devoir supprimé' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la suppression' });
+    }
+};
+exports.deleteAssignment = deleteAssignment;

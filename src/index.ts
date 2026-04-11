@@ -13,9 +13,21 @@ import assignmentRoutes from './routes/assignmentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import path from 'path';
+import prisma from './config/db';
 
 dotenv.config();
 const app = express();
+
+// Test database connection on startup
+console.log('Testing database connection...');
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Database connected successfully');
+  })
+  .catch((error) => {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
+  });
 
 app.use(helmet({
   crossOriginResourcePolicy: false, // Nécessaire pour servir les images/vidéos localement

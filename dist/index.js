@@ -18,8 +18,19 @@ const assignmentRoutes_1 = __importDefault(require("./routes/assignmentRoutes"))
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const errorMiddleware_1 = require("./middleware/errorMiddleware");
 const path_1 = __importDefault(require("path"));
+const db_1 = __importDefault(require("./config/db"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+// Test database connection on startup
+console.log('Testing database connection...');
+db_1.default.$connect()
+    .then(() => {
+    console.log('✅ Database connected successfully');
+})
+    .catch((error) => {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
+});
 app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: false, // Nécessaire pour servir les images/vidéos localement
 }));
