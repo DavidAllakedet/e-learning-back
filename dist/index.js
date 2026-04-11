@@ -35,7 +35,22 @@ app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: false, // Nécessaire pour servir les images/vidéos localement
 }));
 app.use((0, morgan_1.default)('dev'));
-app.use((0, cors_1.default)());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'http://localhost:4000', 'http://localhost:4002'];
+app.use((0, cors_1.default)({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error(`CORS bloqué pour : ${origin}`));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express_1.default.json());
 // Servir les fichiers statiques (uploads)
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));

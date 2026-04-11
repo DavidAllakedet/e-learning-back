@@ -24,7 +24,7 @@ const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
         let subDir = 'others';
         const ext = path_1.default.extname(file.originalname).toLowerCase();
-        if (ext === '.mp4')
+        if (['.mp4', '.mov', '.webm', '.m4v'].includes(ext))
             subDir = 'videos';
         else if (ext === '.pdf')
             subDir = 'pdfs';
@@ -36,13 +36,13 @@ const storage = multer_1.default.diskStorage({
     }
 });
 const fileFilter = (req, file, cb) => {
-    const allowedExtensions = ['.pdf', '.mp4'];
+    const allowedExtensions = ['.pdf', '.mp4', '.mov', '.webm', '.m4v'];
     const ext = path_1.default.extname(file.originalname).toLowerCase();
     if (allowedExtensions.includes(ext)) {
         cb(null, true);
     }
     else {
-        cb(new Error('Seuls les fichiers MP4 et PDF sont autorisés.'));
+        cb(new Error('Seuls les fichiers PDF et vidéos (MP4, MOV, WEBM) sont autorisés.'));
     }
 };
 exports.upload = (0, multer_1.default)({

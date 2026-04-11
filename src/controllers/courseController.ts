@@ -82,7 +82,7 @@ export const createCourse = async (req: Request, res: Response) => {
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
-    const where: any = { status: 'PUBLISHED' };
+    const where: any = {};
     
     if (search) {
       where.OR = [
@@ -91,15 +91,45 @@ export const getAllCourses = async (req: Request, res: Response) => {
       ];
     }
 
-    console.log('Fetching courses with where:', JSON.stringify(where));
+    const pageQuery = req.query.page;
+    const limitQuery = req.query.limit;
+    const hasPagination = pageQuery !== undefined || limitQuery !== undefined;
+
+    const page = Math.max(1, Number.parseInt(String(pageQuery ?? '1'), 10) || 1);
+    const limit = Math.max(1, Math.min(60, Number.parseInt(String(limitQuery ?? '12'), 10) || 12));
+
+    if (hasPagination) {
+      const [total, items] = await Promise.all([
+        prisma.course.count({ where }),
+        prisma.course.findMany({
+          where,
+          include: {
+            teacher: { select: { firstName: true, lastName: true } },
+            _count: { select: { enrollments: true } }
+          },
+          orderBy: { title: 'asc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        })
+      ]);
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      res.setHeader('X-Total-Count', String(total));
+      res.setHeader('X-Total-Pages', String(totalPages));
+      res.setHeader('X-Page', String(page));
+      res.setHeader('X-Limit', String(limit));
+      res.json({ items, meta: { page, limit, total, totalPages } });
+      return;
+    }
+
     const courses = await prisma.course.findMany({
       where,
-      include: { 
+      include: {
         teacher: { select: { firstName: true, lastName: true } },
         _count: { select: { enrollments: true } }
-      }
+      },
+      orderBy: { title: 'asc' }
     });
-    console.log('Courses found:', courses.length);
     res.json(courses);
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -114,7 +144,7 @@ export const getTeacherCourses = async (req: Request, res: Response) => {
       where: { teacherId },
       include: {
         teacher: { select: { firstName: true, lastName: true } },
-        _count: { select: { enrollments: true } }
+        _count: { select: { enrollments: true, modules: true } }
       },
       orderBy: { title: 'asc' }
     });
@@ -316,6 +346,15 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
 export const addModule = async (req: Request, res: Response) => {
   const { title, courseId } = req.body;
   try {
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
     const module = await prisma.courseModule.create({
       data: { title, courseId }
     });
@@ -334,6 +373,18 @@ export const addContent = async (req: Request, res: Response) => {
   }
 
   try {
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const module = await prisma.courseModule.findUnique({
+      where: { id: moduleId },
+      include: { course: true }
+    });
+    if (!module) return res.status(404).json({ message: 'Module non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && module.course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
     const subDir = type === 'VIDEO' ? 'videos' : 'pdfs';
     const url = `/uploads/${subDir}/${file.filename}`;
     
@@ -360,6 +411,28 @@ export const addContent = async (req: Request, res: Response) => {
     res.status(201).json(content);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de l\'ajout du contenu' });
+  }
+};
+
+export const deleteContent = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    const content = await prisma.courseContent.findUnique({
+      where: { id },
+      include: { module: { include: { course: true } } }
+    });
+    if (!content) return res.status(404).json({ message: 'Contenu non trouvé' });
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && content.module.course.teacherId !== userId) {
+      return res.status(403).json({ message: 'Accès interdit' });
+    }
+
+    await prisma.courseContent.delete({ where: { id } });
+    res.json({ message: 'Contenu supprimé' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression du contenu' });
   }
 };
 

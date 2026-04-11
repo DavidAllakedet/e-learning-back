@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCourseDetails = exports.addContent = exports.addModule = exports.deleteEnrollment = exports.getAllEnrollments = exports.enrollInCourse = exports.addCourseEnrollment = exports.removeCourseEnrollment = exports.getCourseEnrollments = exports.deleteCourse = exports.updateCourse = exports.getTeacherCourses = exports.getAllCourses = exports.createCourse = exports.getEnrolledCourses = void 0;
+exports.getCourseDetails = exports.deleteContent = exports.addContent = exports.addModule = exports.deleteEnrollment = exports.getAllEnrollments = exports.enrollInCourse = exports.addCourseEnrollment = exports.removeCourseEnrollment = exports.getCourseEnrollments = exports.deleteCourse = exports.updateCourse = exports.getTeacherCourses = exports.getAllCourses = exports.createCourse = exports.getEnrolledCourses = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const notificationController_1 = require("./notificationController");
 // Course Controller
@@ -78,22 +78,48 @@ exports.createCourse = createCourse;
 const getAllCourses = async (req, res) => {
     try {
         const { search } = req.query;
-        const where = { status: 'PUBLISHED' };
+        const where = {};
         if (search) {
             where.OR = [
                 { title: { contains: String(search) } },
                 { description: { contains: String(search) } }
             ];
         }
-        console.log('Fetching courses with where:', JSON.stringify(where));
+        const pageQuery = req.query.page;
+        const limitQuery = req.query.limit;
+        const hasPagination = pageQuery !== undefined || limitQuery !== undefined;
+        const page = Math.max(1, Number.parseInt(String(pageQuery ?? '1'), 10) || 1);
+        const limit = Math.max(1, Math.min(60, Number.parseInt(String(limitQuery ?? '12'), 10) || 12));
+        if (hasPagination) {
+            const [total, items] = await Promise.all([
+                db_1.default.course.count({ where }),
+                db_1.default.course.findMany({
+                    where,
+                    include: {
+                        teacher: { select: { firstName: true, lastName: true } },
+                        _count: { select: { enrollments: true } }
+                    },
+                    orderBy: { title: 'asc' },
+                    skip: (page - 1) * limit,
+                    take: limit,
+                })
+            ]);
+            const totalPages = Math.max(1, Math.ceil(total / limit));
+            res.setHeader('X-Total-Count', String(total));
+            res.setHeader('X-Total-Pages', String(totalPages));
+            res.setHeader('X-Page', String(page));
+            res.setHeader('X-Limit', String(limit));
+            res.json({ items, meta: { page, limit, total, totalPages } });
+            return;
+        }
         const courses = await db_1.default.course.findMany({
             where,
             include: {
                 teacher: { select: { firstName: true, lastName: true } },
                 _count: { select: { enrollments: true } }
-            }
+            },
+            orderBy: { title: 'asc' }
         });
-        console.log('Courses found:', courses.length);
         res.json(courses);
     }
     catch (error) {
@@ -109,7 +135,7 @@ const getTeacherCourses = async (req, res) => {
             where: { teacherId },
             include: {
                 teacher: { select: { firstName: true, lastName: true } },
-                _count: { select: { enrollments: true } }
+                _count: { select: { enrollments: true, modules: true } }
             },
             orderBy: { title: 'asc' }
         });
@@ -300,6 +326,14 @@ exports.deleteEnrollment = deleteEnrollment;
 const addModule = async (req, res) => {
     const { title, courseId } = req.body;
     try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        const course = await db_1.default.course.findUnique({ where: { id: courseId } });
+        if (!course)
+            return res.status(404).json({ message: 'Cours non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
         const module = await db_1.default.courseModule.create({
             data: { title, courseId }
         });
@@ -317,6 +351,17 @@ const addContent = async (req, res) => {
         return res.status(400).json({ message: 'Aucun fichier uploadé' });
     }
     try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        const module = await db_1.default.courseModule.findUnique({
+            where: { id: moduleId },
+            include: { course: true }
+        });
+        if (!module)
+            return res.status(404).json({ message: 'Module non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && module.course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
         const subDir = type === 'VIDEO' ? 'videos' : 'pdfs';
         const url = `/uploads/${subDir}/${file.filename}`;
         const content = await db_1.default.courseContent.create({
@@ -338,6 +383,28 @@ const addContent = async (req, res) => {
     }
 };
 exports.addContent = addContent;
+const deleteContent = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        const content = await db_1.default.courseContent.findUnique({
+            where: { id },
+            include: { module: { include: { course: true } } }
+        });
+        if (!content)
+            return res.status(404).json({ message: 'Contenu non trouvé' });
+        if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && content.module.course.teacherId !== userId) {
+            return res.status(403).json({ message: 'Accès interdit' });
+        }
+        await db_1.default.courseContent.delete({ where: { id } });
+        res.json({ message: 'Contenu supprimé' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la suppression du contenu' });
+    }
+};
+exports.deleteContent = deleteContent;
 const getCourseDetails = async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
